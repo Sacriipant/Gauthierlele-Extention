@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Gauthierlele Stream Companion",
+  "version": "1.0.0",
+  "description": "The official companion extension for Gauthierlele's Twitch stream. Auto-claim points, Faceit stats, socials and more.",
+  "permissions": [
+    "tabs",
+    "notifications",
+    "storage",
+    "scripting",
+    "alarms",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.twitch.tv/*",
+    "https://gql.twitch.tv/*",
+    "https://open.faceit.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.twitch.tv/gauthierlele*", "https://www.twitch.tv/Gauthierlele*"],
+      "js": ["content.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Gauthierlele Stream Companion",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
