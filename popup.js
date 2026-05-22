@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   bindBetSettings();
   bindSessionReset();
   bindFaceitRefresh();
+  await bindCollapsibles();
 });
 
 // ─── Avatar (no inline onerror) ───────────────────────────────────────────────
@@ -221,6 +222,35 @@ async function loadFaceitStats() {
 function pick(obj, keys) {
   for (const k of keys) if (obj?.[k] != null) return obj[k];
   return null;
+}
+
+// ─── Collapsible Sections (Accordéons) ────────────────────────────────────────
+async function bindCollapsibles() {
+  const headers = document.querySelectorAll('.collapsible-header');
+
+  for (const header of headers) {
+    const card = header.closest('.collapsible-card');
+    const cardId = card.id;
+
+    // 1. Restaurer l'état sauvegardé (si l'utilisateur l'avait fermé avant)
+    if (cardId) {
+      const stored = await chrome.storage.local.get(cardId);
+      if (stored[cardId] === 'collapsed') {
+        card.classList.add('collapsed');
+      }
+    }
+
+    // 2. Écouter les clics
+    header.addEventListener('click', () => {
+      card.classList.toggle('collapsed');
+      
+      // 3. Sauvegarder le nouvel état
+      if (cardId) {
+        const isCollapsed = card.classList.contains('collapsed') ? 'collapsed' : 'open';
+        chrome.storage.local.set({ [cardId]: isCollapsed });
+      }
+    });
+  }
 }
 
 // Render streak from time-based stats (each entry has a "Result" field: "1"=win, "0"=loss)
