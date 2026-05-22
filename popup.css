@@ -661,3 +661,78 @@ a { color: inherit; text-decoration: none; }
   border: 1px solid rgba(233,30,99,0.2);
   border-radius: var(--radius-sm);
 }
+
+/* Curseur cliquable sur le titre */
+.collapsible-header {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  /* Empêche de surligner le texte en double-cliquant */
+  transition: opacity 0.2s;
+}
+
+.collapsible-header:hover {
+  opacity: 0.8;
+  /* Petit retour visuel au survol */
+}
+
+/* Animation de la flèche */
+.collapse-icon {
+  font-size: 10px;
+  transition: transform 0.3s ease;
+}
+
+/* --- ÉTATS RÉDUITS (COLLAPSED) --- */
+
+/* Masque le contenu quand la carte a la classe 'collapsed' */
+.collapsible-card.collapsed .collapsible-content {
+  display: none;
+}
+
+/* Tourne la flèche vers la droite quand c'est réduit */
+.collapsible-card.collapsed .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+
+/* Tuile Partenaire */
+.partner-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  margin-top: 10px;
+  /* Espace avec la tuile du dessus */
+  background-color: #1a1a20;
+  /* Ajustez selon la couleur de vos autres tuiles */
+  border-radius: 8px;
+}
+
+/* Lien cliquable */
+.partner-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+  text-decoration: none;
+}
+
+/* Image du logo */
+.partner-logo {
+  max-width: 140px;
+  /* Largeur maximale pour ne pas casser la popup */
+  height: auto;
+  opacity: 0.85;
+  /* Légèrement grisé de base pour ne pas être trop agressif */
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Effet au survol de la souris */
+.partner-link:hover .partner-logo {
+  opacity: 1;
+  transform: scale(1.05);
+  /* Zoom très léger */
+}

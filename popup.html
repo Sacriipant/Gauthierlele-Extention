@@ -37,71 +37,85 @@
     <span id="game-name" class="meta-pill game-pill">—</span>
   </div>
 
-  <!-- ── SETTINGS ─────────────────────────────────────────────────────────── -->
-  <section class="card">
-    <div class="card-title">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
-      Paramètres
+  <section class="card collapsible-card" id="card-params">
+    <div class="card-title collapsible-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+        </svg>
+        Paramètres
+      </div>
+      <span class="collapse-icon">▼</span>
     </div>
-    <div class="toggles">
-      <label class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-label">Auto-claim points de chaîne</span>
-          <span class="toggle-desc">Réclame automatiquement les bonus</span>
-        </div>
-        <div class="switch"><input type="checkbox" id="tog-claim" /><span class="slider"></span></div>
-      </label>
-      <label class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-label">Ouvrir onglet au démarrage</span>
-          <span class="toggle-desc">Ouvre Twitch quand le stream démarre</span>
-        </div>
-        <div class="switch"><input type="checkbox" id="tog-tab" /><span class="slider"></span></div>
-      </label>
-      <label class="toggle-row">
-        <div class="toggle-info">
-          <span class="toggle-label">Notifier au démarrage</span>
-          <span class="toggle-desc">Notification quand Gauthierlele est live</span>
-        </div>
-        <div class="switch"><input type="checkbox" id="tog-notif" /><span class="slider"></span></div>
-      </label>
+    <div class="collapsible-content">
+      <div class="toggles">
+        <label class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Auto-claim points de chaîne</span>
+            <span class="toggle-desc">Réclame automatiquement les bonus</span>
+          </div>
+          <div class="switch"><input type="checkbox" id="tog-claim" /><span class="slider"></span></div>
+        </label>
+        <label class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Ouvrir onglet au démarrage</span>
+            <span class="toggle-desc">Ouvre Twitch quand le stream démarre</span>
+          </div>
+          <div class="switch"><input type="checkbox" id="tog-tab" /><span class="slider"></span></div>
+        </label>
+        <label class="toggle-row">
+          <div class="toggle-info">
+            <span class="toggle-label">Notifier au démarrage</span>
+            <span class="toggle-desc">Notification quand Gauthierlele est live</span>
+          </div>
+          <div class="switch"><input type="checkbox" id="tog-notif" /><span class="slider"></span></div>
+        </label>
+      </div>
     </div>
   </section>
-
-  <!-- ── AUTO-BET ──────────────────────────────────────────────────────────── -->
-  <section class="card">
-    <div class="card-title">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      Auto-Pari sur Prédictions
-      <span class="badge-new">NEW</span>
+  
+  <section class="card collapsible-card" id="card-bet">
+    <div class="card-title collapsible-header">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+        Auto-Pari sur Prédictions
+        <span class="badge-new">BETA</span>
+      </div>
+      <span class="collapse-icon">▼</span>
     </div>
-
-    <label class="toggle-row">
-      <div class="toggle-info">
-        <span class="toggle-label">Activer l'auto-pari</span>
-        <span class="toggle-desc">Parie automatiquement sur les longues cotes (×10s avant la fin)</span>
-      </div>
-      <div class="switch"><input type="checkbox" id="tog-autobet" /><span class="slider"></span></div>
-    </label>
-
-    <div id="bet-options" class="bet-options hidden">
-      <div class="bet-row">
-        <label class="bet-label" for="bet-amount">Mise (pts)</label>
-        <div class="bet-input-wrap">
-          <input type="number" id="bet-amount" class="bet-input" min="10" max="999999" value="50" />
-          <span class="bet-unit">pts</span>
+  
+    <div class="collapsible-content">
+      <label class="toggle-row" style="margin-top: 10px;">
+        <div class="toggle-info">
+          <span class="toggle-label">Activer l'auto-pari</span>
+          <span class="toggle-desc">Parie automatiquement sur les longues cotes (×10s avant la fin)</span>
         </div>
-        <button id="bet-amount-save" class="save-btn">✓</button>
-      </div>
-      <div class="bet-row">
-        <label class="bet-label" for="bet-odds">Cote min.</label>
-        <div class="bet-input-wrap">
-          <span class="bet-prefix">×</span>
-          <input type="number" id="bet-odds" class="bet-input" min="0" max="99" step="0.1" value="0" placeholder="0 = auto" />
+        <div class="switch"><input type="checkbox" id="tog-autobet" /><span class="slider"></span></div>
+      </label>
+  
+      <div id="bet-options" class="bet-options hidden">
+        <div class="bet-row">
+          <label class="bet-label" for="bet-amount">Mise (pts)</label>
+          <div class="bet-input-wrap">
+            <input type="number" id="bet-amount" class="bet-input" min="10" max="999999" value="50" />
+            <span class="bet-unit">pts</span>
+          </div>
+          <button id="bet-amount-save" class="save-btn">✓</button>
         </div>
-        <button id="bet-odds-save" class="save-btn">✓</button>
+        <div class="bet-row">
+          <label class="bet-label" for="bet-odds">Cote min.</label>
+          <div class="bet-input-wrap">
+            <span class="bet-prefix">×</span>
+            <input type="number" id="bet-odds" class="bet-input" min="0" max="99" step="0.1" value="0"
+              placeholder="0 = auto" />
+          </div>
+          <button id="bet-odds-save" class="save-btn">✓</button>
+        </div>
+        <p class="bet-hint">Cote min à 0 = toujours parier sur l'option la moins populaire.</p>
       </div>
-      <p class="bet-hint">Cote min à 0 = toujours parier sur l'option la moins populaire.</p>
     </div>
   </section>
 
@@ -190,9 +204,10 @@
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Partenaires
     </div>
-    <div class="partners-empty">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-4 0v2"/></svg>
-      <span>Bientôt disponible…</span>
+    <div class="tile partner-tile">
+      <a href="https://csgoskins.gg" target="_blank" rel="noopener noreferrer" class="partner-link">
+        <img src="icons/CSGOSKINS.png" alt="CSGOSKINS Sponsor" class="partner-logo">
+      </a>
     </div>
   </section>
 
