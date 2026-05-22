@@ -151,18 +151,28 @@ async function loadFaceitStats() {
   $('faceit-loading').classList.add('hidden');
   $('faceit-stats').classList.remove('hidden');
 
-  // STEP 2 — Lifetime stats (avg kills, K/D, winrate) — independent
+  // STEP 2 — Lifetime stats (avg kills, K/D, winrate) — direct from profile stats
   bgFetch(`/stats/v1/stats/users/${pid}/games/cs2`)
     .then(stats => {
-      // The API may return the object directly or nest it under keys
-      const lt = stats.lifetime ?? stats.payload ?? stats;
-      $('stat-avg-kills').textContent = pick(lt, ['Average Kills','avgKills','avg_kills','Kills per round']) ?? '—';
-      const kd = pick(lt, ['Average K/D Ratio','kdRatio','kd','K/D Ratio']);
+      // Faceit wraps data inside a 'lifetime' object or directly in the payload
+      const lt = stats?.lifetime ?? stats?.payload?.lifetime ?? stats ?? {};
+      
+      // Target the exact properties Faceit uses for global stats profiles
+      const avgKills = lt['Average Kills'] ?? lt['avgKills'] ?? lt['avg_kills'];
+      const kd = lt['Average K/D Ratio'] ?? lt['kdRatio'] ?? lt['kd'] ?? lt['k/d'];
+      const winRate = lt['Win Rate %'] ?? lt['winRate'] ?? lt['win_rate'];
+
+      // Display or fall back to '—' if unavailable
+      $('stat-avg-kills').textContent = avgKills != null ? parseFloat(avgKills).toFixed(1) : '—';
       $('stat-kd').textContent = kd != null ? parseFloat(kd).toFixed(2) : '—';
-      const wr = pick(lt, ['Win Rate %','winRate','Win Rate','Wins']);
-      $('stat-winrate').textContent = wr != null ? Math.round(parseFloat(wr)) + '%' : '—';
+      $('stat-winrate').textContent = winRate != null ? Math.round(parseFloat(winRate)) + '%' : '—';
     })
-    .catch(e => console.warn('[Popup] Lifetime stats unavailable:', e.message));
+    .catch(e => {
+      console.warn('[Popup] Lifetime stats unavailable:', e.message);
+      $('stat-avg-kills').textContent = '—';
+      $('stat-kd').textContent = '—';
+      $('stat-winrate').textContent = '—';
+    });
 
   // STEP 3 — Last 5 game results for streak — independent
   // Use the "time stats" endpoint which returns one object per match WITH a Result field
@@ -205,49 +215,48 @@ function pick(obj, keys) {
 function renderStreak(games) {
   const c = $('streak-boxes');
   c.innerHTML = '';
-  games.slice(0, 5).forEach(g => {
-    const el  = document.createElement('span');
-    const res = g['Result'] ?? g.result ?? g.win ?? null;
-    const win = res === '1' || res === 1 || res === true;
-    const los = res === '0' || res === 0 || res === false;
-    if (win)      { el.className = 'streak-item win';  el.textContent = 'W'; el.title = 'Victoire'; }
-    else if (los) { el.className = 'streak-item loss'; el.textContent = 'L'; el.title = 'Défaite'; }
-    else          { el.className = 'streak-item none'; el.textContent = '?'; }
+  
+  // Ensure we are working with an array from the API response
+  const matches = Array.isArray(games) ? games : (games.payload ?? games.items ?? []);
+
+  matches.slice(0, 5).forEach(g => {
+    const el = document.createElement('span');
+    
+    // In this API schema, 'i10' is a string ("1" for Win, "0" for Loss)
+    const isWin = g.i10 === '1' || g.i10 === 1;
+    const isLoss = g.i10 === '0' || g.i10 === 0;
+    
+    if (isWin) { 
+      el.className = 'streak-item win';  
+      el.textContent = 'W'; 
+      el.title = `Victoire (${g.i1 ?? 'CS2'})`; 
+    }
+    else if (isLoss) { 
+      el.className = 'streak-item loss'; 
+      el.textContent = 'L'; 
+      el.title = `Défaite (${g.i1 ?? 'CS2'})`; 
+    }
+    else { 
+      el.className = 'streak-item none'; 
+      el.textContent = '?'; 
+    }
     c.appendChild(el);
   });
+
+  // Pad out with empty slots if the player has fewer than 5 games total
   while (c.children.length < 5) {
     const el = document.createElement('span');
-    el.className = 'streak-item none'; el.textContent = '—';
+    el.className = 'streak-item none'; 
+    el.textContent = '—';
     c.appendChild(el);
   }
 }
 
 // Fallback: render streak from match history (needs team membership parsing)
 function renderStreakFromMatches(matches, playerId) {
-  const c = $('streak-boxes');
-  c.innerHTML = '';
-  matches.slice(0, 5).forEach(match => {
-    const el = document.createElement('span');
-    let result = 'none';
-    try {
-      const winner = match.results?.winner ?? match.winner ?? null;
-      const t1 = match.teams?.faction1?.roster ?? [];
-      const t2 = match.teams?.faction2?.roster ?? [];
-      let team = null;
-      if      (t1.some(p => (p.player_id ?? p.id) === playerId)) team = 'faction1';
-      else if (t2.some(p => (p.player_id ?? p.id) === playerId)) team = 'faction2';
-      if (team && winner) result = winner === team ? 'win' : 'loss';
-    } catch {}
-    if (result === 'win')       { el.className = 'streak-item win';  el.textContent = 'W'; el.title = 'Victoire'; }
-    else if (result === 'loss') { el.className = 'streak-item loss'; el.textContent = 'L'; el.title = 'Défaite'; }
-    else                        { el.className = 'streak-item none'; el.textContent = '?'; }
-    c.appendChild(el);
-  });
-  while (c.children.length < 5) {
-    const el = document.createElement('span');
-    el.className = 'streak-item none'; el.textContent = '—';
-    c.appendChild(el);
-  }
+  // Simply redirect to your main, fixed render function since the data
+  // format matches what your backend proxy is returning!
+  renderStreak(matches);
 }
 
 // ─── Session ELO ─────────────────────────────────────────────────────────────
