@@ -151,21 +151,34 @@ async function loadFaceitStats() {
   $('faceit-loading').classList.add('hidden');
   $('faceit-stats').classList.remove('hidden');
 
-  // STEP 2 — Lifetime stats (avg kills, K/D, winrate) — direct from profile stats
+// STEP 2 — Lifetime stats (avg kills, K/D, winrate)
   bgFetch(`/stats/v1/stats/users/${pid}/games/cs2`)
     .then(stats => {
-      // Faceit wraps data inside a 'lifetime' object or directly in the payload
-      const lt = stats?.lifetime ?? stats?.payload?.lifetime ?? stats ?? {};
+      // 1. Essayer d'atteindre le segment "competitions" 5v5 (le plus précis pour l'affichage)
+      const segmentsArray = stats?.segments ?? [];
+      const compSegment = segmentsArray.find(s => s._id?.segmentId === 'competitions');
       
-      // Target the exact properties Faceit uses for global stats profiles
-      const avgKills = lt['Average Kills'] ?? lt['avgKills'] ?? lt['avg_kills'];
-      const kd = lt['Average K/D Ratio'] ?? lt['kdRatio'] ?? lt['kd'] ?? lt['k/d'];
-      const winRate = lt['Win Rate %'] ?? lt['winRate'] ?? lt['win_rate'];
+      // On récupère le premier sous-segment disponible (identifiant unique de la compétition)
+      let targetStats = null;
+      if (compSegment && compSegment.segments) {
+        const firstKey = Object.keys(compSegment.segments)[0];
+        targetStats = compSegment.segments[firstKey];
+      }
 
-      // Display or fall back to '—' if unavailable
+      // 2. Si le segment 5v5 n'est pas trouvé, fallback sur le "lifetime" global
+      if (!targetStats) {
+        targetStats = stats?.lifetime ?? {};
+      }
+
+      // Extraction directe des clés Faceit correspondantes
+      const avgKills = targetStats.k1; // Clé pour la moyenne de Kills
+      const kd       = targetStats.k5; // Clé pour le K/D Ratio
+      const winRate  = targetStats.k6; // Clé pour le Win Rate (%)
+
+      // Injection et formatage dans le DOM
       $('stat-avg-kills').textContent = avgKills != null ? parseFloat(avgKills).toFixed(1) : '—';
-      $('stat-kd').textContent = kd != null ? parseFloat(kd).toFixed(2) : '—';
-      $('stat-winrate').textContent = winRate != null ? Math.round(parseFloat(winRate)) + '%' : '—';
+      $('stat-kd').textContent        = kd       != null ? parseFloat(kd).toFixed(2)       : '—';
+      $('stat-winrate').textContent   = winRate  != null ? Math.round(parseFloat(winRate)) + '%' : '—';
     })
     .catch(e => {
       console.warn('[Popup] Lifetime stats unavailable:', e.message);
@@ -173,7 +186,6 @@ async function loadFaceitStats() {
       $('stat-kd').textContent = '—';
       $('stat-winrate').textContent = '—';
     });
-
   // STEP 3 — Last 5 game results for streak — independent
   // Use the "time stats" endpoint which returns one object per match WITH a Result field
   bgFetch(`/stats/v1/stats/time/users/${pid}/games/cs2?page=0&size=5`)

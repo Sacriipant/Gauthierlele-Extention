@@ -442,9 +442,13 @@ a { color: inherit; text-decoration: none; }
   color: var(--text-faint);
 }
 
-.streak-boxes {
-  display: flex;
-  gap: 5px;
+#streak-boxes {
+  display: flex;          /* Aligne les éléments en ligne */
+  justify-content: center; /* Centre les éléments horizontalement */
+  align-items: center;     /* Centre les éléments verticalement */
+  gap: 6px;                /* Espace uniforme de 6px entre chaque carré (ajustable) */
+  width: 100%;             /* Force le conteneur à prendre toute la largeur de la tuile */
+  margin: 0 auto;          /* Centre le bloc si sa largeur maximale est restreinte */
 }
 
 .streak-item {
