@@ -1,29 +1,29 @@
-#  Gauthierlele Stream Companion — Extension Chrome
+# 🎮 Gauthierlele Stream Companion — Extension Chrome
 
 Extension officielle pour accompagner le stream de **Gauthierlele** sur Twitch.  
 Développée par **Sacripant**.
 
 ---
 
-##  Fonctionnalités
+## ✅ Fonctionnalités
 
 | Fonctionnalité | Description |
 |---|---|
-|  Statut du stream | Affiche si Gauthierlele est LIVE ou OFFLINE |
-|  Auto-claim points | Réclame automatiquement les points de chaîne (toggle) |
-|  Notification | Alerte quand le stream démarre (toggle) |
-|  Auto-open tab | Ouvre automatiquement Twitch au démarrage (toggle) |
-|  Icône animée | L'icône tremble quand le stream est live mais sans onglet ouvert |
-|  Stats Faceit | ELO, kills moyens, K/D, winrate, salle en cours |
-|  Session ELO | Gains/pertes d'ELO depuis le début de la session |
-|  Streak | 5 dernières parties (W/L) |
-|  Réseaux sociaux | Liens X, YouTube, TikTok, Discord, Faceit, HLTV |
-|  Donation | Bouton de don direct vers Streamlabs |
-|  Partenaires | Section dédiée (à compléter) |
+| 🔴 Statut du stream | Affiche si Gauthierlele est LIVE ou OFFLINE |
+| 🎯 Auto-claim points | Réclame automatiquement les points de chaîne (toggle) |
+| 🔔 Notification | Alerte quand le stream démarre (toggle) |
+| 🗂️ Auto-open tab | Ouvre automatiquement Twitch au démarrage (toggle) |
+| 💜 Icône animée | L'icône tremble quand le stream est live mais sans onglet ouvert |
+| 🎮 Stats Faceit | ELO, kills moyens, K/D, winrate, salle en cours |
+| 📊 Session ELO | Gains/pertes d'ELO depuis le début de la session |
+| 🏆 Streak | 5 dernières parties (W/L) |
+| 🔗 Réseaux sociaux | Liens X, YouTube, TikTok, Discord, Faceit, HLTV |
+| 💸 Donation | Bouton de don direct vers Streamlabs |
+| 🤝 Partenaires | Section dédiée (à compléter) |
 
 ---
 
-##  Installation
+## 📦 Installation
 
 > **Aucune publication sur le Chrome Web Store** — installation manuelle.
 
@@ -32,11 +32,11 @@ Développée par **Sacripant**.
 3. Activez le **Mode développeur** (coin supérieur droit)
 4. Cliquez sur **Charger l'extension non empaquetée**
 5. Sélectionnez le dossier `gauthierlele-extension`
-6. L'icône apparaît dans la barre d'outils 
+6. L'icône apparaît dans la barre d'outils ✅
 
 ---
 
-##  Stats Faceit
+## 🎮 Stats Faceit
 
 Les stats Faceit nécessitent une **clé API Faceit** (gratuite) :
 
@@ -48,7 +48,7 @@ Les stats Faceit nécessitent une **clé API Faceit** (gratuite) :
 
 ---
 
-##  Développement
+## 🔧 Développement
 
 ```
 gauthierlele-extension/
@@ -63,7 +63,7 @@ gauthierlele-extension/
 
 ---
 
-##  Notes techniques
+## ⚙️ Notes techniques
 
 - **Manifest V3** (standard Chrome moderne)
 - L'icône tremble toutes les 150ms via `OffscreenCanvas` quand le stream est live sans onglet ouvert
@@ -72,7 +72,7 @@ gauthierlele-extension/
 
 ---
 
-##  Partenaires
+## 🤝 Partenaires
 
 Aucun partenaire pour le moment — section à compléter dans `popup.html`.
 
