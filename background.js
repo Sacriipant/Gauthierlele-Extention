@@ -66,49 +66,37 @@ async function onStreamStart(stream) {
 }
 
 // ─── Icon Shake ───────────────────────────────────────────────────────────────
-function drawIcon(ox, oy) {
-  const s = 32, canvas = new OffscreenCanvas(s, s), ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgba(0,0,0,0.35)';
-  ctx.beginPath(); ctx.roundRect(3+ox, 3+oy, 26, 26, 5); ctx.fill();
-  const g = ctx.createLinearGradient(0, 0, 0, s);
-  g.addColorStop(0, '#a970ff'); g.addColorStop(1, '#7c2fe8');
-  ctx.fillStyle = g;
-  ctx.beginPath(); ctx.roundRect(2+ox, 2+oy, 26, 26, 5); ctx.fill();
-  ctx.fillStyle = '#fff'; ctx.font = 'bold 18px sans-serif';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.fillText('G', s/2+ox, s/2+oy);
-  return ctx.getImageData(0, 0, s, s);
-}
-
-const OFFSETS = [[3,-1],[-3,1],[2,-2],[-2,2],[3,0],[-3,0]];
+const SHAKE_FRAMES = [
+  'icons/icon_shake1.png',
+  'icons/icon_shake2.png',
+  'icons/icon_shake3.png',
+  'icons/icon_shake4.png',
+];
 
 function startShake() {
   if (shakeTimer) return;
   shakeTimer = setInterval(() => {
-    const [ox, oy] = OFFSETS[shakeFrame++ % OFFSETS.length];
-    chrome.action.setIcon({ imageData: { 32: drawIcon(ox, oy) } }).catch(() => {});
+    const path = SHAKE_FRAMES[shakeFrame++ % SHAKE_FRAMES.length];
+    chrome.action.setIcon({ path: { 16: path, 32: path, 48: path, 128: path } }).catch(() => {});
   }, 150);
 }
 
 function stopShake() {
   if (!shakeTimer) return;
   clearInterval(shakeTimer); shakeTimer = null; shakeFrame = 0;
-  chrome.action.setIcon({ path: { 16:'icons/icon16.png', 32:'icons/icon32.png', 48:'icons/icon48.png', 128:'icons/icon128.png' } }).catch(() => {});
+  chrome.action.setIcon({ path: { 16: 'icons/icon16.png', 32: 'icons/icon32.png', 48: 'icons/icon48.png', 128: 'icons/icon128.png' } }).catch(() => {});
 }
 
 async function updateIcon() {
   const { isLive: live } = await chrome.storage.local.get('isLive');
-  if (!live) { stopShake(); chrome.action.setBadgeText({ text: '' }); return; }
-  const tabs = await chrome.tabs.query({ url: `*://www.twitch.tv/${CHANNEL}*` });
-  if (!tabs.length) {
-    startShake();
-    chrome.action.setBadgeText({ text: 'LIVE' });
-    chrome.action.setBadgeBackgroundColor({ color: '#eb0400' });
-  } else {
+  if (!live) {
     stopShake();
-    chrome.action.setBadgeText({ text: '▶' });
-    chrome.action.setBadgeBackgroundColor({ color: '#9147ff' });
+    chrome.action.setBadgeText({ text: '' });
+    return;
   }
+  startShake();
+  chrome.action.setBadgeText({ text: 'LIVE' });
+  chrome.action.setBadgeBackgroundColor({ color: '#eb0400' });
 }
 
 // ─── Polling Alarm ────────────────────────────────────────────────────────────

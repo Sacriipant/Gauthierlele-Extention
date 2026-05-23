@@ -3,8 +3,6 @@
 //  Runs on all https://www.twitch.tv/* pages
 // ════════════════════════════════════════════════════════════════════════════
 
-const EXT_ID = chrome.runtime.id;
-
 // ────────────────────────────────────────────────────────────────────────────
 //  MODULE 1 — Auto-Claim Channel Points
 // ────────────────────────────────────────────────────────────────────────────
@@ -35,7 +33,8 @@ function startClaimObserver() {
 }
 
 function stopClaimObserver() {
-  claimObserver?.disconnect(); claimObserver = null;
+  claimObserver?.disconnect();
+  claimObserver = null;
 }
 
 chrome.storage.onChanged.addListener(({ autoClaimPoints }) => {
@@ -61,37 +60,27 @@ chrome.storage.local.get('autoClaimPoints', ({ autoClaimPoints }) => {
   - Clicks the outcome, fills the amount input, confirms
 */
 
-let activePrediction = null;
-let betScheduled     = false;
-let betObserver      = null;
+let betScheduled = false;
+let betObserver  = null;
 
-// Selectors — Twitch uses generated class names so we target stable attributes
 const P_SEL = {
-  // The top-level predictions wrapper (multiple possible class names)
   panel:   '[data-test-selector="predictions-list"], .predictions-list__container, [class*="PredictionLayout"]',
-  // Each clickable outcome button
   outcome: '[data-test-selector^="prediction-checkout-option"], button[class*="prediction"][class*="outcome"], [class*="PredictionCheckout"] button',
-  // Timer text elements
   timer:   '[data-test-selector="predictions-timer"], [class*="predictions"][class*="timer"], [class*="PredictionTimer"]',
-  // Points input
   input:   '[data-test-selector="prediction-checkout-point-input"], input[class*="prediction"]',
-  // Confirm / vote button
   confirm: '[data-test-selector="prediction-checkout-confirm"], button[class*="prediction"][class*="confirm"], [class*="PredictionCheckout"] button[type="submit"]',
 };
 
 function parseMultiplier(el) {
-  // Look for text like "×2.30" or "2.3x" inside the element
   const text = el?.innerText ?? '';
   const m = text.match(/[×x]([\d.]+)|([\d.]+)[×x]/i);
   if (m) return parseFloat(m[1] || m[2]);
-  // Fallback: look for ratio like "1 / 2.3"
   const r = text.match(/([\d.]+)\s*\/\s*([\d.]+)/);
   if (r) return parseFloat(r[2]);
   return null;
 }
 
 function parseTotalPoints(el) {
-  // Look for numbers like "12,345" or "12 345" in the element text
   const text = el?.innerText ?? '';
   const m = text.match(/([\d,\s]+)\s*(pts?|points?)/i);
   if (m) return parseInt(m[1].replace(/[,\s]/g, ''), 10);
@@ -101,7 +90,6 @@ function parseTotalPoints(el) {
 function parseTimerSeconds(el) {
   if (!el) return null;
   const text = el.innerText.trim();
-  // "1:30", "0:45", "10s", "45"
   const ms = text.match(/^(\d+):(\d{2})$/);
   if (ms) return parseInt(ms[1]) * 60 + parseInt(ms[2]);
   const ss = text.match(/^(\d+)\s*s/i);
@@ -114,38 +102,33 @@ function parseTimerSeconds(el) {
 async function tryBet(outcomeEl) {
   const { betAmount = 50 } = await chrome.storage.local.get('betAmount');
 
-  // 1. Click the outcome
   outcomeEl.click();
   await sleep(600);
 
-  // 2. Fill the points input
   const input = document.querySelector(P_SEL.input);
   if (input) {
     input.focus();
-    // Use React synthetic event trick
     const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
     nativeSetter.call(input, String(betAmount));
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('input',  { bubbles: true }));
     input.dispatchEvent(new Event('change', { bubbles: true }));
     await sleep(300);
   }
 
-  // 3. Click confirm
   const confirm = document.querySelector(P_SEL.confirm);
   if (confirm && !confirm.disabled) {
     confirm.click();
     console.log(`[GExt] Auto-bet ${betAmount} pts placed!`);
   }
 
-  activePrediction = null;
-  betScheduled     = false;
+  betScheduled = false;
 }
 
 function scheduleBet(outcomeEl, secondsLeft) {
   if (betScheduled) return;
   betScheduled = true;
   const delay = Math.max(0, (secondsLeft - 10) * 1000);
-  console.log(`[GExt] Bet scheduled in ${Math.round(delay/1000)}s on:`, outcomeEl?.innerText?.slice(0,40));
+  console.log(`[GExt] Bet scheduled in ${Math.round(delay / 1000)}s on:`, outcomeEl?.innerText?.slice(0, 40));
   setTimeout(() => tryBet(outcomeEl), delay);
 }
 
@@ -156,14 +139,13 @@ function scanForPrediction() {
   const outcomes = [...panel.querySelectorAll(P_SEL.outcome)];
   if (outcomes.length < 2) return;
 
-  // Parse multipliers / totals for each outcome
   const parsed = outcomes.map(el => ({
     el,
     multiplier: parseMultiplier(el),
-    total: parseTotalPoints(el),
+    total:      parseTotalPoints(el),
   }));
 
-  // Pick long odds: lowest total (or highest multiplier if totals unavailable)
+  // Pick long odds: lowest total points, or highest multiplier as fallback
   let best = parsed[0];
   for (const o of parsed) {
     if (o.total != null && best.total != null) {
@@ -173,16 +155,12 @@ function scanForPrediction() {
     }
   }
 
-  // Check target odds filter
-  chrome.storage.local.get(['targetOdds', 'betAmount'], async ({ targetOdds = 0 }) => {
+  chrome.storage.local.get(['targetOdds', 'betAmount'], ({ targetOdds = 0 }) => {
     if (targetOdds > 0 && best.multiplier != null && best.multiplier < targetOdds) {
       console.log(`[GExt] Skipping bet: odds ${best.multiplier}x < target ${targetOdds}x`);
       return;
     }
-
-    // Parse timer
-    const timerEl    = panel.querySelector(P_SEL.timer);
-    const secondsLeft = parseTimerSeconds(timerEl) ?? 120; // default assume 2min
+    const secondsLeft = parseTimerSeconds(panel.querySelector(P_SEL.timer)) ?? 120;
     scheduleBet(best.el, secondsLeft);
   });
 }
@@ -198,8 +176,9 @@ function startBetObserver() {
 }
 
 function stopBetObserver() {
-  betObserver?.disconnect(); betObserver = null;
-  betScheduled = false; activePrediction = null;
+  betObserver?.disconnect();
+  betObserver  = null;
+  betScheduled = false;
 }
 
 chrome.storage.onChanged.addListener(({ autoBet }) => {
@@ -216,29 +195,24 @@ chrome.storage.local.get('autoBet', ({ autoBet }) => {
 //  MODULE 3 — Faceit Level 20 Badge Injection in Chat
 // ────────────────────────────────────────────────────────────────────────────
 /*
-  For every chat message visible, append a local Faceit lvl20 badge.
-  This is PURELY LOCAL — other users never see it.
-  Works by watching for new chat lines via MutationObserver.
+  Appends a local Faceit lvl20 badge to every chat message.
+  Purely cosmetic — only visible to the extension user.
 */
 
 const BADGE_URL   = chrome.runtime.getURL('icons/badge_f20.png');
-const BADGE_CLASS = 'gext-badge-f20'; // our marker to avoid duplicates
+const BADGE_CLASS = 'gext-badge-f20';
 
-const CHAT_SELECTORS = {
+const CHAT_SEL = {
   container: '.chat-scrollable-area__message-container, [data-test-selector="chat-scrollable-area__message-container"]',
   line:      '.chat-line__message, [data-test-selector="chat-line-message-body"]',
-  badges:    '.chat-badge, [class*="InjectLayout"] img[alt]',
   badgeWrap: '.chat-badges, [class*="ChatBadgeList"]',
 };
 
 function injectBadge(lineEl) {
-  if (!lineEl) return;
-  if (lineEl.querySelector('.' + BADGE_CLASS)) return; // already injected
+  if (!lineEl || lineEl.querySelector('.' + BADGE_CLASS)) return;
 
-  // Find the badge container
-  let wrap = lineEl.querySelector(CHAT_SELECTORS.badgeWrap);
+  let wrap = lineEl.querySelector(CHAT_SEL.badgeWrap);
   if (!wrap) {
-    // Create one before the username
     const username = lineEl.querySelector('[class*="username"], [data-a-user]');
     if (!username) return;
     wrap = document.createElement('span');
@@ -246,56 +220,44 @@ function injectBadge(lineEl) {
     username.parentNode?.insertBefore(wrap, username);
   }
 
-  const img       = document.createElement('img');
-  img.src         = BADGE_URL;
-  img.className   = BADGE_CLASS;
-  img.title       = 'Faceit Level 20 · Extension Gauthierlele';
-  img.style.cssText = `
-    width:18px;height:18px;
-    vertical-align:middle;
-    margin:0 2px;
-    border-radius:50%;
-    cursor:default;
-    flex-shrink:0;
-  `;
+  const img         = document.createElement('img');
+  img.src           = BADGE_URL;
+  img.className     = BADGE_CLASS;
+  img.title         = 'Faceit Level 20 · Extension Gauthierlele';
+  img.style.cssText = 'width:18px;height:18px;vertical-align:middle;margin:0 2px;border-radius:50%;cursor:default;flex-shrink:0;';
   wrap.appendChild(img);
 }
 
 function injectAllBadges() {
-  document.querySelectorAll(CHAT_SELECTORS.line).forEach(injectBadge);
+  document.querySelectorAll(CHAT_SEL.line).forEach(injectBadge);
 }
 
 let badgeObserver = null;
 
 function startBadgeObserver() {
   if (badgeObserver) return;
-  // Initial pass
   injectAllBadges();
 
   badgeObserver = new MutationObserver((mutations) => {
     for (const m of mutations) {
       m.addedNodes.forEach((node) => {
         if (node.nodeType !== 1) return;
-        if (node.matches?.(CHAT_SELECTORS.line)) injectBadge(node);
-        else node.querySelectorAll?.(CHAT_SELECTORS.line).forEach(injectBadge);
+        if (node.matches?.(CHAT_SEL.line)) injectBadge(node);
+        else node.querySelectorAll?.(CHAT_SEL.line).forEach(injectBadge);
       });
     }
   });
 
-  const container = document.querySelector(CHAT_SELECTORS.container);
+  const container = document.querySelector(CHAT_SEL.container);
   if (container) {
     badgeObserver.observe(container, { childList: true, subtree: true });
   } else {
-    // Retry once DOM is ready
     setTimeout(startBadgeObserver, 2000);
   }
 }
 
-// Always start badge observer (not toggleable per spec)
-// Wait for chat to load
 const waitForChat = setInterval(() => {
-  if (document.querySelector(CHAT_SELECTORS.container) ||
-      document.querySelector('.chat-room')) {
+  if (document.querySelector(CHAT_SEL.container) || document.querySelector('.chat-room')) {
     clearInterval(waitForChat);
     startBadgeObserver();
   }

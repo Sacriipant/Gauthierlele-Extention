@@ -20,7 +20,14 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["icons/badge_f20.png", "icons/badge_f20@2x.png"],
+      "resources": [
+        "icons/badge_f20.png",
+        "icons/badge_f20@2x.png",
+        "icons/icon_shake1.png",
+        "icons/icon_shake2.png",
+        "icons/icon_shake3.png",
+        "icons/icon_shake4.png"
+      ],
       "matches": ["https://www.twitch.tv/*"]
     }
   ],

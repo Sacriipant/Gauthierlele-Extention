@@ -1,81 +1,187 @@
-# 🎮 Gauthierlele Stream Companion — Extension Chrome
-
-Extension officielle pour accompagner le stream de **Gauthierlele** sur Twitch.  
-Développée par **Sacripant**.
-
----
-
-## ✅ Fonctionnalités
-
-| Fonctionnalité | Description |
-|---|---|
-| 🔴 Statut du stream | Affiche si Gauthierlele est LIVE ou OFFLINE |
-| 🎯 Auto-claim points | Réclame automatiquement les points de chaîne (toggle) |
-| 🔔 Notification | Alerte quand le stream démarre (toggle) |
-| 🗂️ Auto-open tab | Ouvre automatiquement Twitch au démarrage (toggle) |
-| 💜 Icône animée | L'icône tremble quand le stream est live mais sans onglet ouvert |
-| 🎮 Stats Faceit | ELO, kills moyens, K/D, winrate, salle en cours |
-| 📊 Session ELO | Gains/pertes d'ELO depuis le début de la session |
-| 🏆 Streak | 5 dernières parties (W/L) |
-| 🔗 Réseaux sociaux | Liens X, YouTube, TikTok, Discord, Faceit, HLTV |
-| 💸 Donation | Bouton de don direct vers Streamlabs |
-| 🤝 Partenaires | Section dédiée (à compléter) |
-
----
-
-## 📦 Installation
-
-> **Aucune publication sur le Chrome Web Store** — installation manuelle.
-
-1. Téléchargez et décompressez le fichier ZIP
-2. Ouvrez Chrome et allez sur `chrome://extensions/`
-3. Activez le **Mode développeur** (coin supérieur droit)
-4. Cliquez sur **Charger l'extension non empaquetée**
-5. Sélectionnez le dossier `gauthierlele-extension`
-6. L'icône apparaît dans la barre d'outils ✅
-
----
-
-## 🎮 Stats Faceit
-
-Les stats Faceit nécessitent une **clé API Faceit** (gratuite) :
-
-1. Allez sur [developers.faceit.com](https://developers.faceit.com/)
-2. Créez un compte et générez une clé API
-3. Collez-la dans la popup au premier lancement
-
-> La clé est stockée localement dans l'extension — elle n'est jamais envoyée ailleurs que vers l'API officielle Faceit.
-
----
-
-## 🔧 Développement
-
 ```
-gauthierlele-extension/
-├── manifest.json       # Config Chrome Extension (MV3)
-├── background.js       # Service worker (polling, notifications, icône)
-├── content.js          # Script sur twitch.tv (auto-claim)
-├── popup.html          # Interface utilisateur
-├── popup.css           # Styles (thème Twitch)
-├── popup.js            # Logique popup + Faceit API
-└── icons/              # Icônes (16, 32, 48, 128px)
+╔══════════════════════════════════════════════════════════════╗
+║           GAUTHIERLELE  STREAM  COMPANION  v2.0.0            ║
+║              Extension officielle pour Chrome                ║
+╚══════════════════════════════════════════════════════════════╝
 ```
 
----
-
-## ⚙️ Notes techniques
-
-- **Manifest V3** (standard Chrome moderne)
-- L'icône tremble toutes les 150ms via `OffscreenCanvas` quand le stream est live sans onglet ouvert
-- Les points de chaîne sont détectés via `MutationObserver` sur la page Twitch
-- Le stream est vérifié toutes les **60 secondes** via l'API GQL de Twitch
+Extension navigateur non-officielle dédiée au stream Twitch de **Gauthierlele**.
+Elle surveille le stream en arrière-plan, automatise certaines actions sur Twitch
+et affiche les statistiques Faceit CS2 en temps réel directement dans la popup.
 
 ---
 
-## 🤝 Partenaires
+## Sommaire
 
-Aucun partenaire pour le moment — section à compléter dans `popup.html`.
+- [Fonctionnalités](#fonctionnalités)
+- [Installation](#installation)
+- [Structure du projet](#structure-du-projet)
+- [Configuration](#configuration)
+- [Permissions](#permissions)
+- [Développement](#développement)
+- [Crédits](#crédits)
 
 ---
 
-*Fait avec 💜 par **Sacripant***
+## Fonctionnalités
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ▸ Surveillance du stream          ▸ Auto-pari predictions  │
+│  ▸ Auto-claim points de chaîne     ▸ Stats Faceit CS2       │
+│  ▸ Notifications de démarrage      ▸ Badge chat lvl 20      │
+│  ▸ Ouverture automatique d'onglet  ▸ ELO de session         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Surveillance du stream
+
+L'extension interroge l'API Twitch toutes les minutes. Quand Gauthierlele
+passe en live, l'icône de l'extension se met à trembler avec un badge rouge
+**LIVE**. Si un onglet Twitch est déjà ouvert, le badge bascule en **▶** violet.
+
+### Auto-claim des points de chaîne
+
+Un observateur surveille le DOM de Twitch et clique automatiquement sur le
+bouton de collecte des points bonus dès qu'il apparaît. Activable ou
+désactivable depuis la popup.
+
+### Notifications et ouverture d'onglet
+
+Au démarrage du stream, l'extension peut envoyer une notification système et
+ouvrir automatiquement un onglet Twitch si aucun n'est déjà actif. Les deux
+comportements sont configurables indépendamment.
+
+### Auto-pari sur les prédictions _(BETA)_
+
+Surveille l'apparition d'un panneau de prédiction sur la page Twitch, analyse
+les deux options (total de points misés ou multiplicateur affiché), sélectionne
+automatiquement l'option à plus longue cote, puis place la mise configurée
+10 secondes avant la fermeture du vote. Un filtre de cote minimale est
+disponible (`0` = toujours parier sur l'option la moins populaire).
+
+### Statistiques Faceit CS2
+
+Charge au démarrage de la popup les données suivantes pour le joueur
+**EXT1NCTI0N-** via l'API publique Faceit :
+
+```
+  ELO · Moyenne de kills · K/D ratio · Win rate
+  5 dernières parties (W / L) · Salle de match en cours
+  Delta ELO de session (réinitialisable)
+```
+
+### Badge Faceit dans le chat
+
+Injecte localement un badge Faceit niveau 20 sur chaque message visible dans
+le chat Twitch. Purement cosmétique, uniquement visible pour l'utilisateur.
+
+---
+
+## Installation
+
+L'extension n'est pas publiée sur le Chrome Web Store. Elle s'installe
+manuellement en mode développeur.
+
+```
+1. Télécharger ou cloner ce dépôt
+2. Ouvrir Chrome et naviguer vers  chrome://extensions
+3. Activer le "Mode développeur" (interrupteur en haut à droite)
+4. Cliquer sur "Charger l'extension non empaquetée"
+5. Sélectionner le dossier racine du projet
+```
+
+L'icône apparaît alors dans la barre d'outils Chrome. Épinglez-la pour
+accéder rapidement à la popup.
+
+---
+
+## Structure du projet
+
+```
+Gauthierlele-Extension/
+│
+├── manifest.json          Configuration de l'extension (MV3)
+├── background.js          Service worker : polling, icône, alarmes
+├── content.js             Script injecté sur twitch.tv : claim, bet, badge
+├── popup.html             Interface de la popup
+├── popup.js               Logique de la popup
+├── popup.css              Styles de la popup
+│
+└── icons/
+    ├── icon16.png         Icône standard  16×16
+    ├── icon32.png         Icône standard  32×32
+    ├── icon48.png         Icône standard  48×48
+    ├── icon128.png        Icône standard 128×128
+    ├── icon_shake1.png    }
+    ├── icon_shake2.png    } Frames d'animation "shake" (stream live)
+    ├── icon_shake3.png    }
+    ├── icon_shake4.png    }
+    ├── badge_f20.png      Badge Faceit lvl20 injecté dans le chat
+    ├── badge_f20@2x.png   Variante haute résolution du badge
+    └── CSGOSKINS.png      Logo partenaire CSGOSKINS.GG
+```
+
+---
+
+## Configuration
+
+Toutes les préférences sont stockées via `chrome.storage.local` et persistent
+entre les sessions. Elles sont accessibles depuis la popup.
+
+| Clé               | Type    | Défaut  | Description                                   |
+|-------------------|---------|---------|-----------------------------------------------|
+| `autoClaimPoints` | boolean | `true`  | Active le claim automatique des points         |
+| `autoOpenTab`     | boolean | `false` | Ouvre un onglet Twitch au démarrage du stream  |
+| `notifyOnStart`   | boolean | `true`  | Envoie une notification au démarrage du stream |
+| `autoBet`         | boolean | `false` | Active l'auto-pari sur les prédictions         |
+| `betAmount`       | number  | `50`    | Mise en points par prédiction                  |
+| `targetOdds`      | number  | `0`     | Cote minimale pour parier (0 = aucun filtre)   |
+
+---
+
+## Permissions
+
+```
+  tabs          ── Détection des onglets Twitch ouverts
+  notifications ── Notifications système au démarrage du stream
+  storage       ── Persistance des préférences utilisateur
+  scripting     ── Injection du content script
+  alarms        ── Polling toutes les 60 secondes
+  activeTab     ── Accès à l'onglet actif pour les actions Twitch
+```
+
+Hôtes autorisés : `twitch.tv`, `gql.twitch.tv`, `api.faceit.com`, `open.faceit.com`
+
+---
+
+## Développement
+
+### Prérequis
+
+Aucune dépendance externe ni étape de build. L'extension est en JavaScript
+vanilla avec l'API Chrome Manifest V3.
+
+### Rechargement après modification
+
+Après toute modification d'un fichier source, rechargez l'extension depuis
+`chrome://extensions` (bouton de rechargement sur la carte de l'extension).
+Les changements dans `content.js` nécessitent en plus de rafraîchir les
+onglets Twitch concernés.
+
+### Notes sur l'API Faceit
+
+Les appels Faceit sont effectués depuis le service worker (`background.js`)
+afin de contourner les restrictions CORS du contexte popup. La popup envoie
+un message de type `FACEIT_FETCH` au background, qui exécute la requête et
+renvoie le résultat.
+
+---
+
+## Crédits
+
+```
+  Développé par  Sacripant
+  Pour le stream Gauthierlele  ──  twitch.tv/Gauthierlele
+  Partenaire     CSGOSKINS.GG  ──  code GOAT
+```

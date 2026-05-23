@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await bindCollapsibles();
 });
 
-// ─── Avatar (no inline onerror) ───────────────────────────────────────────────
+// ─── Avatar ───────────────────────────────────────────────────────────────────
 function fixAvatarFallback() {
   const img = $('avatar-img');
   img.addEventListener('error', () => { img.src = 'icons/icon48.png'; });
@@ -34,7 +34,7 @@ function fixAvatarFallback() {
 // ─── Settings ─────────────────────────────────────────────────────────────────
 async function loadSettings() {
   const s = await chrome.storage.local.get([
-    'autoClaimPoints','autoOpenTab','notifyOnStart','autoBet','betAmount','targetOdds'
+    'autoClaimPoints', 'autoOpenTab', 'notifyOnStart', 'autoBet', 'betAmount', 'targetOdds'
   ]);
   $('tog-claim').checked   = s.autoClaimPoints !== false;
   $('tog-tab').checked     = !!s.autoOpenTab;
@@ -51,7 +51,7 @@ function bindToggles() {
   $('tog-notif').addEventListener('change',   e => chrome.storage.local.set({ notifyOnStart: e.target.checked }));
   $('tog-autobet').addEventListener('change', e => {
     chrome.storage.local.set({ autoBet: e.target.checked });
-    e.target.checked ? $('bet-options').classList.remove('hidden') : $('bet-options').classList.add('hidden');
+    $('bet-options').classList.toggle('hidden', !e.target.checked);
   });
 }
 
@@ -72,7 +72,8 @@ function bindBetSettings() {
 }
 
 function flashSaved(btn) {
-  btn.classList.add('saved'); btn.textContent = '✓ Ok';
+  btn.classList.add('saved');
+  btn.textContent = '✓ Ok';
   setTimeout(() => { btn.classList.remove('saved'); btn.textContent = '✓'; }, 1500);
 }
 
@@ -81,7 +82,7 @@ async function loadStreamStatus() {
   const cached = await new Promise(r => chrome.runtime.sendMessage({ type: 'GET_STREAM_STATUS' }, r));
   if (cached?.isLive) { setLive(cached.streamData); return; }
   try {
-    const res  = await fetch(GQL, {
+    const res = await fetch(GQL, {
       method: 'POST',
       headers: { 'Client-Id': TWITCH_CID, 'Content-Type': 'application/json' },
       body: JSON.stringify([{ query: `query { user(login:"${TWITCH_CHANNEL}") { stream { id title viewersCount game { name } } } }` }])
@@ -104,6 +105,7 @@ function setLive(stream) {
     $('game-name').textContent = stream.game?.name ?? '—';
   }
 }
+
 function setOffline() {
   $('stream-status').textContent = 'OFFLINE';
   $('stream-status').className   = 'stream-status offline';
@@ -128,7 +130,7 @@ async function loadFaceitStats() {
 
   let pid = null;
 
-  // STEP 1 — Player info + ELO (required, if this fails show error)
+  // STEP 1 — Player info + ELO (required; shows error on failure)
   try {
     const player  = await bgFetch(`/users/v1/nicknames/${FACEIT_PLAYER}`);
     const payload = player.payload ?? player;
@@ -148,166 +150,112 @@ async function loadFaceitStats() {
     return;
   }
 
-  // Show the stats panel now — remaining steps fill it in
   $('faceit-loading').classList.add('hidden');
   $('faceit-stats').classList.remove('hidden');
 
-// STEP 2 — Lifetime stats (avg kills, K/D, winrate)
+  // STEP 2 — Lifetime stats (avg kills, K/D, win rate)
   bgFetch(`/stats/v1/stats/users/${pid}/games/cs2`)
     .then(stats => {
-      // 1. Essayer d'atteindre le segment "competitions" 5v5 (le plus précis pour l'affichage)
       const segmentsArray = stats?.segments ?? [];
-      const compSegment = segmentsArray.find(s => s._id?.segmentId === 'competitions');
-      
-      // On récupère le premier sous-segment disponible (identifiant unique de la compétition)
-      let targetStats = null;
-      if (compSegment && compSegment.segments) {
+      const compSegment   = segmentsArray.find(s => s._id?.segmentId === 'competitions');
+      let targetStats     = null;
+
+      if (compSegment?.segments) {
         const firstKey = Object.keys(compSegment.segments)[0];
         targetStats = compSegment.segments[firstKey];
       }
 
-      // 2. Si le segment 5v5 n'est pas trouvé, fallback sur le "lifetime" global
-      if (!targetStats) {
-        targetStats = stats?.lifetime ?? {};
-      }
+      if (!targetStats) targetStats = stats?.lifetime ?? {};
 
-      // Extraction directe des clés Faceit correspondantes
-      const avgKills = targetStats.k1; // Clé pour la moyenne de Kills
-      const kd       = targetStats.k5; // Clé pour le K/D Ratio
-      const winRate  = targetStats.k6; // Clé pour le Win Rate (%)
-
-      // Injection et formatage dans le DOM
-      $('stat-avg-kills').textContent = avgKills != null ? parseFloat(avgKills).toFixed(1) : '—';
-      $('stat-kd').textContent        = kd       != null ? parseFloat(kd).toFixed(2)       : '—';
-      $('stat-winrate').textContent   = winRate  != null ? Math.round(parseFloat(winRate)) + '%' : '—';
+      $('stat-avg-kills').textContent = targetStats.k1 != null ? parseFloat(targetStats.k1).toFixed(1) : '—';
+      $('stat-kd').textContent        = targetStats.k5 != null ? parseFloat(targetStats.k5).toFixed(2) : '—';
+      $('stat-winrate').textContent   = targetStats.k6 != null ? Math.round(parseFloat(targetStats.k6)) + '%' : '—';
     })
     .catch(e => {
       console.warn('[Popup] Lifetime stats unavailable:', e.message);
-      $('stat-avg-kills').textContent = '—';
-      $('stat-kd').textContent = '—';
-      $('stat-winrate').textContent = '—';
+      ['stat-avg-kills', 'stat-kd', 'stat-winrate'].forEach(id => { $(id).textContent = '—'; });
     });
-  // STEP 3 — Last 5 game results for streak — independent
-  // Use the "time stats" endpoint which returns one object per match WITH a Result field
+
+  // STEP 3 — Last 5 game results for streak
   bgFetch(`/stats/v1/stats/time/users/${pid}/games/cs2?page=0&size=5`)
     .then(data => {
       const games = Array.isArray(data) ? data : (data.payload ?? data.items ?? []);
-      renderStreak(games);
+      renderStreak(games.reverse());
     })
     .catch(() => {
-      // Fallback: match history v2
       bgFetch(`/match/v2/match?userId=${pid}&game=cs2&limit=5`)
-        .then(data => {
-          const matches = data.payload ?? data.items ?? [];
-          renderStreakFromMatches(matches, pid);
-        })
+        .then(data => renderStreak((data.payload ?? data.items ?? []).reverse()))
         .catch(e => console.warn('[Popup] Streak unavailable:', e.message));
     });
 
-  // STEP 4 — Active match room — independent
+  // STEP 4 — Active match room
   bgFetch(`/match/v2/match?userId=${pid}&game=cs2&state=ongoing&limit=1`)
     .then(data => {
       const list = data.payload ?? data.items ?? [];
       if (!list.length) return;
-      const m   = list[0];
-      const mid = m.id ?? m.matchId ?? m.match_id ?? '';
+      const mid = list[0].id ?? list[0].matchId ?? list[0].match_id ?? '';
       $('match-room-row').classList.remove('hidden');
       $('match-room-link').textContent = mid ? '#' + mid.slice(-6) : 'En cours';
       $('match-room-link').href = `https://www.faceit.com/en/cs2/room/${mid}`;
     })
-    .catch(() => {}); // silently ignore — no active match is normal
+    .catch(() => {});
 }
 
-// Try multiple key names in an object, return first match
-function pick(obj, keys) {
-  for (const k of keys) if (obj?.[k] != null) return obj[k];
-  return null;
-}
-
-// ─── Collapsible Sections (Accordéons) ────────────────────────────────────────
+// ─── Collapsibles ─────────────────────────────────────────────────────────────
 async function bindCollapsibles() {
-  const headers = document.querySelectorAll('.collapsible-header');
+  for (const header of document.querySelectorAll('.collapsible-header')) {
+    const card   = header.closest('.collapsible-card');
+    const cardId = card?.id;
 
-  for (const header of headers) {
-    const card = header.closest('.collapsible-card');
-    const cardId = card.id;
-
-    // 1. Restaurer l'état sauvegardé (si l'utilisateur l'avait fermé avant)
     if (cardId) {
       const stored = await chrome.storage.local.get(cardId);
-      if (stored[cardId] === 'collapsed') {
-        card.classList.add('collapsed');
-      }
+      if (stored[cardId] === 'collapsed') card.classList.add('collapsed');
     }
 
-    // 2. Écouter les clics
     header.addEventListener('click', () => {
       card.classList.toggle('collapsed');
-      
-      // 3. Sauvegarder le nouvel état
       if (cardId) {
-        const isCollapsed = card.classList.contains('collapsed') ? 'collapsed' : 'open';
-        chrome.storage.local.set({ [cardId]: isCollapsed });
+        chrome.storage.local.set({ [cardId]: card.classList.contains('collapsed') ? 'collapsed' : 'open' });
       }
     });
   }
 }
 
-// Render streak from time-based stats (each entry has a "Result" field: "1"=win, "0"=loss)
+// ─── Streak ───────────────────────────────────────────────────────────────────
 function renderStreak(games) {
   const c = $('streak-boxes');
   c.innerHTML = '';
-  
-  // Ensure we are working with an array from the API response
+
   const matches = Array.isArray(games) ? games : (games.payload ?? games.items ?? []);
 
   matches.slice(0, 5).forEach(g => {
-    const el = document.createElement('span');
-    
-    // In this API schema, 'i10' is a string ("1" for Win, "0" for Loss)
-    const isWin = g.i10 === '1' || g.i10 === 1;
+    const el   = document.createElement('span');
+    const isWin  = g.i10 === '1' || g.i10 === 1;
     const isLoss = g.i10 === '0' || g.i10 === 0;
-    
-    if (isWin) { 
-      el.className = 'streak-item win';  
-      el.textContent = 'W'; 
-      el.title = `Victoire (${g.i1 ?? 'CS2'})`; 
-    }
-    else if (isLoss) { 
-      el.className = 'streak-item loss'; 
-      el.textContent = 'L'; 
-      el.title = `Défaite (${g.i1 ?? 'CS2'})`; 
-    }
-    else { 
-      el.className = 'streak-item none'; 
-      el.textContent = '?'; 
-    }
+
+    if (isWin)       { el.className = 'streak-item win';  el.textContent = 'W'; el.title = `Victoire (${g.i1 ?? 'CS2'})`; }
+    else if (isLoss) { el.className = 'streak-item loss'; el.textContent = 'L'; el.title = `Défaite (${g.i1 ?? 'CS2'})`; }
+    else             { el.className = 'streak-item none'; el.textContent = '?'; }
+
     c.appendChild(el);
   });
 
-  // Pad out with empty slots if the player has fewer than 5 games total
+  // Pad to 5 slots
   while (c.children.length < 5) {
     const el = document.createElement('span');
-    el.className = 'streak-item none'; 
+    el.className   = 'streak-item none';
     el.textContent = '—';
     c.appendChild(el);
   }
 }
 
-// Fallback: render streak from match history (needs team membership parsing)
-function renderStreakFromMatches(matches, playerId) {
-  // Simply redirect to your main, fixed render function since the data
-  // format matches what your backend proxy is returning!
-  renderStreak(matches);
-}
-
-// ─── Session ELO ─────────────────────────────────────────────────────────────
+// ─── Session ELO ──────────────────────────────────────────────────────────────
 function dateKey() { return new Date().toISOString().split('T')[0]; }
 
 async function renderSessionEloFromStorage(elo) {
   if (elo == null) return;
   const today = dateKey();
-  let { sessionStartElo, sessionDate } = await chrome.storage.local.get(['sessionStartElo','sessionDate']);
+  let { sessionStartElo, sessionDate } = await chrome.storage.local.get(['sessionStartElo', 'sessionDate']);
   if (sessionDate !== today) {
     sessionStartElo = elo;
     await chrome.storage.local.set({ sessionStartElo: elo, sessionDate: today });
@@ -316,10 +264,11 @@ async function renderSessionEloFromStorage(elo) {
 }
 
 function renderSessionElo(start, current) {
-  const el = $('session-elo'), diff = current - start;
+  const el   = $('session-elo');
+  const diff = current - start;
   if (diff > 0)      { el.textContent = `+${diff} ▲`; el.className = 'session-value positive'; }
   else if (diff < 0) { el.textContent = `${diff} ▼`;  el.className = 'session-value negative'; }
-  else               { el.textContent = `±0`;          el.className = 'session-value neutral'; }
+  else               { el.textContent = `±0`;          el.className = 'session-value neutral';  }
 }
 
 function bindSessionReset() {
