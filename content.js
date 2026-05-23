@@ -6,6 +6,9 @@
 // ────────────────────────────────────────────────────────────────────────────
 //  MODULE 1 — Auto-Claim Channel Points
 // ────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────
+//  MODULE 1 — Auto-Claim Channel Points
+// ────────────────────────────────────────────────────────────────────────────
 const CLAIM_SELECTORS = [
   'button[aria-label="Claim Bonus"]',
   '.claimable-bonus__icon',
@@ -33,8 +36,7 @@ function startClaimObserver() {
 }
 
 function stopClaimObserver() {
-  claimObserver?.disconnect();
-  claimObserver = null;
+  claimObserver?.disconnect(); claimObserver = null;
 }
 
 chrome.storage.onChanged.addListener(({ autoClaimPoints }) => {
