@@ -53,7 +53,10 @@ async function onStreamStart(stream) {
   const { autoOpenTab, notifyOnStart } = await chrome.storage.local.get(['autoOpenTab', 'notifyOnStart']);
   if (autoOpenTab) {
     const tabs = await chrome.tabs.query({ url: `*://www.twitch.tv/${CHANNEL}*` });
-    if (!tabs.length) chrome.tabs.create({ url: TWITCH_URL });
+    if (!tabs.length) {
+      const tab = await chrome.tabs.create({ url: TWITCH_URL });
+      chrome.tabs.update(tab.id, { muted: true });
+    }
   }
   if (notifyOnStart !== false) {
     chrome.notifications.create('live', {
