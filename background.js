@@ -91,12 +91,9 @@ async function updateIcon() {
   const { isLive: live } = await chrome.storage.local.get('isLive');
   if (!live) {
     stopShake();
-    chrome.action.setBadgeText({ text: '' });
     return;
   }
   startShake();
-  chrome.action.setBadgeText({ text: 'LIVE' });
-  chrome.action.setBadgeBackgroundColor({ color: '#eb0400' });
 }
 
 // ─── Polling Alarm ────────────────────────────────────────────────────────────
